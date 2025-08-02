@@ -14,8 +14,10 @@ const BestSellers = () => {
   return (
     <div className='mt-8 mb-16'>
       <p className='text-2xl md:text-3xl font-medium'>Best Sellers</p>
-      <div>
-        <Productcard product={products[0]} key={products[0]._id} />
+      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6'>
+        {products.slice(0, 5).map((product) => (
+          <Productcard product={product} key={product._id} />
+        ))}
       </div>
     </div>
   )

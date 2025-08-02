@@ -8,7 +8,11 @@ import profile from '../../assets/profile.png'
 
 const Navbar = () => {
 const [open, setOpen] = useState(false);
-const {user,setUser,showUserLogin,setShowUserLogin,navigate} = UseAppContext();
+const {user,setUser,showUserLogin,setShowUserLogin,navigate,CartItems} = UseAppContext();
+
+// Calculate total cart items
+const cartItemCount = Object.values(CartItems).reduce((total, quantity) => total + quantity, 0);
+
 // logout func
 const logout = async()=>{
     setUser(null);
@@ -26,7 +30,7 @@ const logout = async()=>{
                 {/* Desktop Menu */}
                 <div className="hidden sm:flex items-center gap-8">
                     <NavLink to='/'>Home</NavLink>
-                    <NavLink to='/'>Products</NavLink>
+                    <NavLink to='/products'>Products</NavLink>
                     <NavLink to='/'>Contact</NavLink>
     
                     <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
@@ -36,7 +40,11 @@ const logout = async()=>{
     
                     <div onClick={()=>{navigate("/cart")}} className="relative cursor-pointer">
                     <BsCart />
-                        <button className="absolute -top-2 -right-3 text-xs text-white bg-primary w-[18px] h-[18px] rounded-full">3</button>
+                        {cartItemCount > 0 && (
+                            <span className="absolute -top-2 -right-3 text-xs text-white bg-primary w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                                {cartItemCount}
+                            </span>
+                        )}
                     </div>
     
                     {!user ?(
@@ -64,6 +72,15 @@ const logout = async()=>{
                     <div className={`${open ? 'flex' : 'hidden'} absolute top-[60px] z-40 left-0 w-full bg-white shadow-md py-4 flex-col items-start gap-2 px-5 text-sm md:hidden`}>
                 <NavLink to='/' onClick={()=>{setOpen(false)}}>Home</NavLink>
                     <NavLink to='/products' onClick={()=>{setOpen(false)}}>Products</NavLink>
+                    <div onClick={()=>{navigate("/cart"); setOpen(false)}} className="flex items-center gap-2 cursor-pointer">
+                        <BsCart />
+                        <span>Cart</span>
+                        {cartItemCount > 0 && (
+                            <span className="text-xs text-white bg-primary w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </div>
                     {user &&
                     <NavLink to='/orders' onClick={()=>{setOpen(false)}}>My Orders</NavLink>
 

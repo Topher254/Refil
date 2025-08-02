@@ -3,7 +3,7 @@ import { HiPlus, HiStar } from "react-icons/hi";
 import { UseAppContext } from "../../context/context";
 import { useState, useEffect } from "react";
 
-const Productcard = ({ product }) => {
+const Productcard = ({ product, vendor }) => {
   const { addtoCart, updateCartItems, removeItem, CartItems } = UseAppContext();
   const [showAdded, setShowAdded] = useState(false);
 
@@ -13,6 +13,12 @@ const Productcard = ({ product }) => {
       return () => clearTimeout(timer);
     }
   }, [showAdded]);
+
+  // Handle both old product structure and new vendor product structure
+  const finalPrice = product.finalPrice || product.offerPrice;
+  const basePrice = product.basePrice || product.price;
+  const offerPrice = product.offerPrice;
+  const deliveryFee = vendor?.deliveryFee || 0;
 
   return product && (
     <div className="border border-gray-500/20 rounded-md md:px-4 px-3 py-2 bg-white min-w-56 max-w-56 w-full">
@@ -29,9 +35,17 @@ const Productcard = ({ product }) => {
           <p>(4)</p>
         </div>
         <div className="flex items-end justify-between mt-3">
-          <p className="md:text-xl text-base font-medium text-indigo-500">
-            Kshs{product.offerPrice} <span className="text-gray-500/60 md:text-sm text-xs line-through">kshs{product.price}</span>
-          </p>
+          <div>
+            <p className="md:text-xl text-base font-medium text-indigo-500">
+              Kshs{finalPrice}
+            </p>
+            {basePrice !== offerPrice && (
+              <span className="text-gray-500/60 md:text-sm text-xs line-through">Kshs{basePrice}</span>
+            )}
+            {vendor && (
+              <p className="text-xs text-gray-500">+ Kshs{deliveryFee} delivery</p>
+            )}
+          </div>
           <div className="text-indigo-500">
             {!CartItems[product._id] ? (
               <button
