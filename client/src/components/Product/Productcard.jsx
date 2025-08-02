@@ -1,9 +1,18 @@
 import { BsStar } from "react-icons/bs";
 import { HiPlus, HiStar } from "react-icons/hi";
 import { UseAppContext } from "../../context/context";
+import { useState, useEffect } from "react";
 
 const Productcard = ({ product }) => {
   const { addtoCart, updateCartItems, removeItem, CartItems } = UseAppContext();
+  const [showAdded, setShowAdded] = useState(false);
+
+  useEffect(() => {
+    if (showAdded) {
+      const timer = setTimeout(() => setShowAdded(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [showAdded]);
 
   return product && (
     <div className="border border-gray-500/20 rounded-md md:px-4 px-3 py-2 bg-white min-w-56 max-w-56 w-full">
@@ -26,34 +35,50 @@ const Productcard = ({ product }) => {
           <div className="text-indigo-500">
             {!CartItems[product._id] ? (
               <button
-                className="flex items-center justify-center gap-1 bg-indigo-100 border border-indigo-300 md:w-[80px] w-[64px] h-[34px] rounded text-indigo-600 font-medium"
-                onClick={() => addtoCart(product._id)}
+                className={`flex items-center justify-center gap-1 px-2 border border-indigo-300 md:w-[80px] w-[64px] h-[34px] rounded font-medium transition-all ${
+                  showAdded
+                    ? "bg-green-100 text-green-600 border-green-300"
+                    : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200"
+                }`}
+                onClick={() => {
+                  addtoCart(product._id);
+                  setShowAdded(true);
+                }}
               >
-                <HiPlus />
-                Add
+                {showAdded ? "Added!" : <><HiPlus className="text-sm" /> Add</>}
               </button>
             ) : (
-              <div className="flex items-center justify-center gap-2 md:w-20 w-16 h-[34px] bg-indigo-500/25 rounded select-none">
-                <button
-                  onClick={() => {
-                    if (CartItems[product._id] === 1) {
-                      removeItem(product._id);
-                    } else {
-                      updateCartItems(product._id, CartItems[product._id] - 1);
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2 px-2 md:w-20 w-16 h-[34px] bg-primary/25 rounded">
+                  <button
+                    onClick={() => {
+                      if (CartItems[product._id] === 1) {
+                        removeItem(product._id);
+                      } else {
+                        updateCartItems(product._id, CartItems[product._id] - 1);
+                      }
+                    }}
+                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center"
+                  >
+                    -
+                  </button>
+                  <span className="w-5 text-center">
+                    {product._id}
+                  </span>
+                  <button
+                    onClick={() =>
+                      updateCartItems(product._id, CartItems[product._id] + 1)
                     }
-                  }}
-                  className="cursor-pointer text-md px-2 h-full"
-                >
-                  -
-                </button>
-                <span className="w-5 text-center">Add</span>
+                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                </div>
                 <button
-                  onClick={() =>
-                    updateCartItems(product._id, CartItems[product._id] + 1)
-                  }
-                  className="cursor-pointer text-md px-2 h-full"
+                  onClick={() => removeItem(product._id)}
+                  className="text-red-600 text-sm border border-red-300 px-2 py-1 rounded hover:bg-red-50 transition"
                 >
-                  +
+                  Remove
                 </button>
               </div>
             )}

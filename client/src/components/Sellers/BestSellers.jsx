@@ -12,7 +12,7 @@ const BestSellers = () => {
   }
 
   return (
-    <div className='mt-8'>
+    <div className='mt-8 mb-16'>
       <p className='text-2xl md:text-3xl font-medium'>Best Sellers</p>
       <div>
         <Productcard product={products[0]} key={products[0]._id} />
