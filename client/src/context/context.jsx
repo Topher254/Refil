@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {  dummyproducts, vendorDetails } from "../assets/assets";
+import {  dummyproducts, vendorDetails, mockOrders, mockPayments, mockReviews, mockAnalytics } from "../assets/assets";
 import toast from "react-hot-toast";
 
 export const AppContext = createContext();
@@ -16,6 +16,10 @@ export const AppContextProvider =({children})=>{
     const [CartItems,setCartItems] = useState({})
     const [selectedCategory, setSelectedCategory] = useState(null)
     const [vendors, setVendors] = useState({})
+    const [orders, setOrders] = useState(mockOrders);
+    const [payments, setPayments] = useState(mockPayments);
+    const [reviews, setReviews] = useState(mockReviews);
+    const [analytics, setAnalytics] = useState(mockAnalytics);
 
     // fn to fetch products
     const fetchproducts=async()=>{
@@ -124,6 +128,30 @@ const getAllProductsWithVendors = () => {
     return allProducts;
 }
 
+// Admin-specific getters
+const getAllOrders = () => orders;
+const getAllPayments = () => payments;
+const getAllReviews = () => reviews;
+const getAnalytics = () => analytics;
+
+// Vendor-specific getters (for current vendor, mock: first vendor in gas)
+const getVendorOrders = (vendorName) => orders.filter(o => o.vendor === vendorName);
+const getVendorPayments = (vendorName) => payments.filter(p => p.vendor === vendorName);
+const getVendorReviews = (vendorName) => reviews.filter(r => r.vendor === vendorName);
+
+// Admin actions (mock)
+const moderateReview = (reviewId) => {
+  setReviews(reviews => reviews.map(r => r.id === reviewId ? { ...r, flagged: !r.flagged } : r));
+};
+const approveVendor = (vendorId) => {
+  // Implement vendor approval logic here
+  toast.success('Vendor approved (mock)');
+};
+const deactivateUser = (userId) => {
+  // Implement user deactivation logic here
+  toast.success('User deactivated (mock)');
+};
+
 const value = {
     navigate,
     user,
@@ -144,6 +172,20 @@ const value = {
     getVendorDetails,
     getProductWithVendor,
     getAllProductsWithVendors,
+    orders,
+    payments,
+    reviews,
+    analytics,
+    getAllOrders,
+    getAllPayments,
+    getAllReviews,
+    getAnalytics,
+    getVendorOrders,
+    getVendorPayments,
+    getVendorReviews,
+    moderateReview,
+    approveVendor,
+    deactivateUser,
     vendors
 }
 

@@ -511,3 +511,40 @@ export const dummyproducts = [
     inStock: false,
   },
 ];
+
+// Rich mock data for orders
+export const mockOrders = [
+  { id: 1, customer: 'Alice', vendor: 'Pro Gas Station', product: 'ProGas 6kg Cylinder', status: 'Incoming', location: 'Westlands', time: '2025-08-01T10:00:00Z' },
+  { id: 2, customer: 'Bob', vendor: 'Total Gas Station', product: 'K-Gas 13kg Cylinder', status: 'Accepted', location: 'Kilimani', time: '2025-08-01T11:00:00Z' },
+  { id: 3, customer: 'Carol', vendor: 'Sea Gas Station', product: 'Rubis 6kg Cylinder', status: 'Out for Delivery', location: 'South B', time: '2025-08-01T12:00:00Z' },
+  { id: 4, customer: 'David', vendor: 'Aqua Pure Water', product: '20L Bottled Water', status: 'Delivered', location: 'Westlands', time: '2025-08-01T13:00:00Z' },
+];
+
+// Rich mock data for payments
+export const mockPayments = [
+  { id: 1, vendor: 'Pro Gas Station', type: 'M-Pesa', amount: 1399, status: 'Received', time: '2025-08-01T10:30:00Z' },
+  { id: 2, vendor: 'Total Gas Station', type: 'Cash on Delivery', amount: 2500, status: 'Pending', time: '2025-08-01T12:00:00Z' },
+  { id: 3, vendor: 'Sea Gas Station', type: 'M-Pesa', amount: 1250, status: 'Received', time: '2025-08-01T13:00:00Z' },
+  { id: 4, vendor: 'Aqua Pure Water', type: 'Cash on Delivery', amount: 200, status: 'Pending', time: '2025-08-01T14:00:00Z' },
+];
+
+// Rich mock data for reviews
+export const mockReviews = [
+  { id: 1, vendor: 'Pro Gas Station', customer: 'Alice', rating: 5, comment: 'Great service!', flagged: false },
+  { id: 2, vendor: 'Total Gas Station', customer: 'Bob', rating: 4, comment: 'Quick delivery.', flagged: false },
+  { id: 3, vendor: 'Sea Gas Station', customer: 'Carol', rating: 2, comment: 'Late delivery.', flagged: true },
+  { id: 4, vendor: 'Aqua Pure Water', customer: 'David', rating: 5, comment: 'Very reliable.', flagged: false },
+];
+
+// Rich mock data for analytics
+export const mockAnalytics = {
+  revenue: { daily: 10000, weekly: 70000, monthly: 300000 },
+  activeVendors: 12,
+  activeCustomers: 120,
+  mostOrdered: 'ProGas 6kg Cylinder',
+  retention: '85%',
+  orders: 150,
+  completedOrders: 140,
+  cashOrders: 40,
+  mpesaOrders: 110,
+};

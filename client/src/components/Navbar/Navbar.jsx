@@ -1,6 +1,6 @@
 import { ShoppingBasket, X } from 'lucide-react';
 import React, { useState } from 'react'
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { BsCart, BsSearch } from "react-icons/bs";
 import { HiMenuAlt3 } from "react-icons/hi";
 import { UseAppContext } from '../../context/context';
@@ -8,7 +8,8 @@ import profile from '../../assets/profile.png'
 
 const Navbar = () => {
 const [open, setOpen] = useState(false);
-const {user,setUser,showUserLogin,setShowUserLogin,navigate,CartItems} = UseAppContext();
+const {user,setUser,navigate: contextNavigate,CartItems} = UseAppContext();
+const navigate = useNavigate();
 
 // Calculate total cart items
 const cartItemCount = Object.values(CartItems).reduce((total, quantity) => total + quantity, 0);
@@ -48,8 +49,8 @@ const logout = async()=>{
                     </div>
     
                     {!user ?(
-                    <button onClick={()=>{setShowUserLogin(true)}} className="cursor-pointer px-8 py-2 bg-primary hover:bg-primary-dull transition text-white rounded-full">
-                        Login
+                    <button onClick={()=>{navigate('/login')}} className="cursor-pointer px-8 py-2 bg-primary hover:bg-primary-dull transition text-white rounded-full">
+                        Login / Signup
                     </button>)
                     :
                     (
@@ -88,9 +89,9 @@ const logout = async()=>{
                     {!user ?(
                         <button onClick={()=>{
                             setOpen(false);
-                            setShowUserLogin(true);
+                            navigate('/login');
                         }} className="cursor-pointer px-6 py-2 mt-2 bg-primary hover:bg-primary-dull transition text-white rounded-full text-sm">
-                        Login
+                        Login / Signup
                     </button>
                     ):(<button
                     onClick={logout}
