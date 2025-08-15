@@ -5,7 +5,7 @@ import { HiFilter, HiSearch, HiArrowLeft, HiStar, HiTruck, HiLocationMarker } fr
 import { BsStarFill } from 'react-icons/bs';
 
 const Products = () => {
-  const { vendors, addtoCart, navigate } = UseAppContext();
+  const { products, addtoCart, navigate } = UseAppContext();
   const [searchParams] = useSearchParams();
   
   const [selectedCategory, setSelectedCategory] = useState('gas');
@@ -22,23 +22,8 @@ const Products = () => {
     }
   }, [searchParams]);
 
-  // Get all products from vendors
-  const getAllProducts = () => {
-    const allProducts = [];
-    Object.values(vendors).forEach(categoryVendors => {
-      categoryVendors.forEach(vendor => {
-        vendor.products.forEach(product => {
-          allProducts.push({
-            ...product,
-            vendor: vendor
-          });
-        });
-      });
-    });
-    return allProducts;
-  };
-
-  const allProducts = getAllProducts();
+  // Use products from context
+  const allProducts = products;
 
   // Filter products based on selections
   const filteredProducts = allProducts.filter(product => {

@@ -3,6 +3,7 @@ import { UseAppContext } from '../../context/context';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import { MdDashboard, MdGroup, MdShoppingCart, MdPayments, MdStarRate, MdAnalytics } from 'react-icons/md';
 import toast from 'react-hot-toast';
+import { HiMenuAlt3 } from 'react-icons/hi';
 
 const adminTabs = [
   { label: 'Dashboard', key: 'dashboard', icon: <MdDashboard size={22} /> },
@@ -68,23 +69,10 @@ const UsersTab = () => {
 };
 
 const OrdersTab = () => {
-  const [orders, setOrders] = useState([
-    { id: 1, vendor: 'Pro Gas Station', location: 'Westlands', status: 'Ongoing' },
-    { id: 2, vendor: 'SeaGas', location: 'Kilimani', status: 'Completed' },
-    { id: 3, vendor: 'Total', location: 'CBD', status: 'Ongoing' },
-  ]);
+  const { orders, updateOrderStatus, deleteOrder } = UseAppContext();
   const [filter, setFilter] = useState('All');
   const filtered = filter === 'All' ? orders : orders.filter(o => o.status === filter);
-  const updateStatus = (idx) => {
-    setOrders(orders => orders.map((o, i) => i === idx ? { ...o, status: o.status === 'Ongoing' ? 'Completed' : 'Ongoing' } : o));
-    toast.success('Order status updated');
-  };
-  const deleteOrder = (idx) => {
-    if (window.confirm('Delete this order?')) {
-      setOrders(orders => orders.filter((_, i) => i !== idx));
-      toast.success('Order deleted');
-    }
-  };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Order Monitoring</h2>
@@ -113,10 +101,10 @@ const OrdersTab = () => {
                 <td className="p-2">{order.location}</td>
                 <td className="p-2">{order.status}</td>
                 <td className="p-2 flex gap-2">
-                  <button className="px-2 py-1 bg-blue-100 rounded" onClick={() => updateStatus(idx)}>
+                  <button className="px-2 py-1 bg-blue-100 rounded" onClick={() => updateOrderStatus(order.id, order.status === 'Ongoing' ? 'Completed' : 'Ongoing')}>
                     Mark as {order.status === 'Ongoing' ? 'Completed' : 'Ongoing'}
                   </button>
-                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteOrder(idx)}>Delete</button>
+                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteOrder(order.id)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -129,10 +117,7 @@ const OrdersTab = () => {
 };
 
 const PaymentsTab = () => {
-  const [payments, setPayments] = useState([
-    { id: 1, vendor: 'Pro Gas Station', type: 'M-Pesa', amount: 1399, status: 'Received' },
-    { id: 2, vendor: 'SeaGas', type: 'Cash on Delivery', amount: 2500, status: 'Pending' },
-  ]);
+  const { payments, addPayment, updatePayment, deletePayment } = UseAppContext();
   const [modalOpen, setModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ vendor: '', type: 'M-Pesa', amount: '', status: 'Received' });
@@ -151,22 +136,14 @@ const PaymentsTab = () => {
       toast.error('All fields required');
       return;
     }
-    let updated;
     if (editIdx !== null) {
-      updated = payments.map((p, i) => (i === editIdx ? { ...form, id: p.id } : p));
+      updatePayment(form.id, form);
       toast.success('Payment updated');
     } else {
-      updated = [...payments, { ...form, id: Date.now() }];
+      addPayment(form);
       toast.success('Payment added');
     }
-    setPayments(updated);
     setModalOpen(false);
-  };
-  const deletePayment = (idx) => {
-    if (window.confirm('Delete this payment?')) {
-      setPayments(payments.filter((_, i) => i !== idx));
-      toast.success('Payment deleted');
-    }
   };
   return (
     <div className="p-4">
@@ -194,7 +171,7 @@ const PaymentsTab = () => {
                 <td className="p-2">{payment.status}</td>
                 <td className="p-2 flex gap-2">
                   <button className="text-blue-600" onClick={() => openModal(idx)} title="Edit">Edit</button>
-                  <button className="text-red-600" onClick={() => deletePayment(idx)} title="Delete">Delete</button>
+                  <button className="text-red-600" onClick={() => deletePayment(payment.id)} title="Delete">Delete</button>
                 </td>
               </tr>
             ))}
@@ -241,20 +218,7 @@ const PaymentsTab = () => {
 };
 
 const ReviewsTab = () => {
-  const [reviews, setReviews] = useState([
-    { id: 1, vendor: 'Pro Gas Station', customer: 'Alice', rating: 5, comment: 'Great service!', flagged: false },
-    { id: 2, vendor: 'SeaGas', customer: 'Bob', rating: 2, comment: 'Late delivery.', flagged: true },
-  ]);
-  const moderateReview = (idx) => {
-    setReviews(reviews => reviews.map((r, i) => i === idx ? { ...r, flagged: !r.flagged } : r));
-    toast.success('Review moderated');
-  };
-  const deleteReview = (idx) => {
-    if (window.confirm('Delete this review?')) {
-      setReviews(reviews => reviews.filter((_, i) => i !== idx));
-      toast.success('Review deleted');
-    }
-  };
+  const { reviews, moderateReview, deleteReview } = UseAppContext();
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Reviews & Complaints</h2>
@@ -279,8 +243,8 @@ const ReviewsTab = () => {
                 <td className="p-2">{review.rating}/5</td>
                 <td className="p-2">{review.flagged ? <span className="text-red-500">Yes</span> : 'No'}</td>
                 <td className="p-2 flex gap-2">
-                  <button className="px-2 py-1 bg-yellow-100 rounded" onClick={() => moderateReview(idx)}>{review.flagged ? 'Unflag' : 'Flag'}</button>
-                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteReview(idx)}>Delete</button>
+                  <button className="px-2 py-1 bg-yellow-100 rounded" onClick={() => moderateReview(review.id, !review.flagged)}>{review.flagged ? 'Unflag' : 'Flag'}</button>
+                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteReview(review.id)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -296,37 +260,60 @@ const ReviewsTab = () => {
 };
 
 const AnalyticsTab = () => {
-  const mockAnalytics = {
-    revenue: { daily: 10000, weekly: 70000, monthly: 300000 },
-    activeVendors: 12,
-    activeCustomers: 120,
-    mostOrdered: 'ProGas 6kg',
-    retention: '85%'
-  };
+  const { analytics } = UseAppContext();
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Analytics & Reporting</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded shadow p-4">
-          <div><b>Daily Revenue:</b> KES {mockAnalytics.revenue.daily}</div>
-          <div><b>Weekly Revenue:</b> KES {mockAnalytics.revenue.weekly}</div>
-          <div><b>Monthly Revenue:</b> KES {mockAnalytics.revenue.monthly}</div>
-          <div><b>Active Vendors:</b> {mockAnalytics.activeVendors}</div>
-          <div><b>Active Customers:</b> {mockAnalytics.activeCustomers}</div>
-          <div><b>Most Ordered Product:</b> {mockAnalytics.mostOrdered}</div>
-          <div><b>Customer Retention Rate:</b> {mockAnalytics.retention}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-primary">
+          <span className="text-3xl mb-2 text-primary">💰</span>
+          <div className="text-lg font-semibold">KES {analytics?.revenue?.daily ?? 0}</div>
+          <div className="text-gray-500 text-sm">Daily Revenue</div>
         </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-primary-dull">
+          <span className="text-3xl mb-2 text-green-600">📈</span>
+          <div className="text-lg font-semibold">KES {analytics?.revenue?.weekly ?? 0}</div>
+          <div className="text-gray-500 text-sm">Weekly Revenue</div>
+        </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-primary">
+          <span className="text-3xl mb-2 text-indigo-600">📅</span>
+          <div className="text-lg font-semibold">KES {analytics?.revenue?.monthly ?? 0}</div>
+          <div className="text-gray-500 text-sm">Monthly Revenue</div>
+        </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-yellow-400">
+          <span className="text-3xl mb-2 text-yellow-500">🏪</span>
+          <div className="text-lg font-semibold">{analytics?.activeVendors ?? 0}</div>
+          <div className="text-gray-500 text-sm">Active Vendors</div>
+        </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-blue-400">
+          <span className="text-3xl mb-2 text-blue-500">🧑‍🤝‍🧑</span>
+          <div className="text-lg font-semibold">{analytics?.activeCustomers ?? 0}</div>
+          <div className="text-gray-500 text-sm">Active Customers</div>
+        </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-pink-400">
+          <span className="text-3xl mb-2 text-pink-500">🔥</span>
+          <div className="text-lg font-semibold">{analytics?.mostOrdered ?? '-'}</div>
+          <div className="text-gray-500 text-sm">Most Ordered Product</div>
+        </div>
+        <div className="bg-white rounded shadow p-6 flex flex-col items-center border-t-4 border-green-400">
+          <span className="text-3xl mb-2 text-green-500">🔄</span>
+          <div className="text-lg font-semibold">{analytics?.retention ?? '-'}</div>
+          <div className="text-gray-500 text-sm">Customer Retention Rate</div>
+        </div>
+      </div>
+      {/* Chart Placeholder */}
+      <div className="bg-white rounded shadow p-6">
+        <div className="font-semibold mb-2">Sales & Revenue (Chart Coming Soon)</div>
+        <div className="h-40 flex items-center justify-center text-gray-400">[Chart Placeholder]</div>
       </div>
     </div>
   );
 };
 
 const AdminDashboard = () => {
-  const { getAllOrders, getAllPayments, getAllReviews, analytics } = UseAppContext();
-  const orders = getAllOrders();
-  const payments = getAllPayments();
-  const reviews = getAllReviews();
+  const { orders, payments, reviews, analytics } = UseAppContext();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   let tabContent;
   if (activeTab === 'dashboard') {
@@ -351,7 +338,7 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-white rounded shadow p-4 flex flex-col items-center">
             <MdAnalytics className="text-primary mb-2" size={36} />
-            <div className="text-lg font-semibold">KES {analytics.revenue.monthly}</div>
+            <div className="text-lg font-semibold">KES {analytics?.revenue?.monthly ?? 0}</div>
             <div className="text-gray-500 text-sm">Revenue (Monthly)</div>
           </div>
         </div>
@@ -404,17 +391,35 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Hamburger menu for mobile */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded shadow border border-gray-200"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open sidebar"
+      >
+        <HiMenuAlt3 size={24} />
+      </button>
       <DashboardSidebar
         links={adminTabs.map(tab => ({
           ...tab,
-          onClick: () => setActiveTab(tab.key),
+          onClick: () => {
+            setActiveTab(tab.key);
+            setSidebarOpen(false);
+          },
           isActive: activeTab === tab.key,
         }))}
         title="Admin"
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        open={sidebarOpen || window.innerWidth >= 1024}
+        onClose={() => setSidebarOpen(false)}
       />
-      <main className="flex-1 ml-20 lg:ml-64 p-6 transition-all">
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <main className="flex-1 ml-0 lg:ml-64 p-6 transition-all w-full">
         {tabContent}
       </main>
     </div>

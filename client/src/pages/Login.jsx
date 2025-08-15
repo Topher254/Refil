@@ -1,102 +1,105 @@
 import React, { useState } from 'react';
 import { UseAppContext } from '../context/context';
 import { useNavigate } from 'react-router-dom';
-
-const ADMIN_EMAIL = 'adminrefil@gmail.com';
-const ADMIN_PASSWORD = '12345678';
+import { HiEye, HiEyeOff } from 'react-icons/hi';
 
 const Login = () => {
-  const { setUser, setisSeller } = UseAppContext();
+  const { login, register } = UseAppContext();
   const navigate = useNavigate();
   const [tab, setTab] = useState('vendor');
-  // Vendor signup/login state
-  const [vendorSignup, setVendorSignup] = useState({
-    businessName: '',
-    email: '',
-    phone: '',
-    password: '',
-  });
-  const [vendorLogin, setVendorLogin] = useState({
+  const [signup, setSignup] = useState({
+    name: '',
     email: '',
     password: '',
   });
-  const [registeredVendors, setRegisteredVendors] = useState([]);
-  const [adminLogin, setAdminLogin] = useState({
+  const [loginData, setLoginData] = useState({
     email: '',
     password: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Vendor signup handler
-  const handleVendorSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    if (!vendorSignup.businessName || !vendorSignup.email || !vendorSignup.phone || !vendorSignup.password) {
+    setError('');
+    if (!signup.name || !signup.email || !signup.password) {
       setError('Please fill all fields');
       return;
     }
-    setRegisteredVendors([...registeredVendors, vendorSignup]);
-    setError('');
-    alert('Signup successful! Please login.');
-    setTab('vendor-login');
-  };
-
-  // Vendor login handler
-  const handleVendorLogin = (e) => {
-    e.preventDefault();
-    const found = registeredVendors.find(v => v.email === vendorLogin.email && v.password === vendorLogin.password);
-    if (found) {
-      setUser({ ...found, role: 'vendor' });
-      setisSeller(true);
-      setError('');
-      navigate('/vendor/dashboard');
-    } else {
-      setError('Invalid vendor credentials or not registered.');
+    setLoading(true);
+    const success = await register(signup.name, signup.email, signup.password, 'vendor');
+    setLoading(false);
+    if (success) {
+      alert('Signup successful! Please login.');
+      setTab('vendor-login');
     }
   };
 
-  // Admin login handler
-  const handleAdminLogin = (e) => {
+  // Vendor login handler
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (adminLogin.email === ADMIN_EMAIL && adminLogin.password === ADMIN_PASSWORD) {
-      setUser({ email: ADMIN_EMAIL, role: 'admin' });
-      setisSeller(false);
-      setError('');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid admin credentials.');
+    setError('');
+    if (!loginData.email || !loginData.password) {
+      setError('Please fill all fields');
+      return;
+    }
+    setLoading(true);
+    const loggedInUser = await login(loginData.email, loginData.password);
+    setLoading(false);
+    if (loggedInUser) {
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/vendor/dashboard');
+      }
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <div className="flex mb-6">
-          <button className={`flex-1 py-2 ${tab === 'vendor' ? 'font-bold border-b-2 border-primary' : ''}`} onClick={() => setTab('vendor')}>Vendor Signup</button>
-          <button className={`flex-1 py-2 ${tab === 'vendor-login' ? 'font-bold border-b-2 border-primary' : ''}`} onClick={() => setTab('vendor-login')}>Vendor Login</button>
-          <button className={`flex-1 py-2 ${tab === 'admin' ? 'font-bold border-b-2 border-primary' : ''}`} onClick={() => setTab('admin')}>Admin Login</button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 to-blue-100">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
+        <div className="flex mb-8 gap-2">
+          <button className={`flex-1 py-2 rounded-t-lg transition-all duration-150 ${tab === 'vendor' ? 'font-bold border-b-2 border-primary text-primary bg-primary/10' : 'text-gray-500 bg-gray-50'}`} onClick={() => setTab('vendor')}>Vendor Signup</button>
+          <button className={`flex-1 py-2 rounded-t-lg transition-all duration-150 ${tab === 'vendor-login' ? 'font-bold border-b-2 border-primary text-primary bg-primary/10' : 'text-gray-500 bg-gray-50'}`} onClick={() => setTab('vendor-login')}>Vendor Login</button>
         </div>
-        {error && <div className="mb-4 text-red-500">{error}</div>}
+        {error && <div className="mb-4 text-red-500 text-center font-medium">{error}</div>}
         {tab === 'vendor' && (
-          <form onSubmit={handleVendorSignup} className="flex flex-col gap-3">
-            <input type="text" placeholder="Business Name" value={vendorSignup.businessName} onChange={e => setVendorSignup({ ...vendorSignup, businessName: e.target.value })} className="border p-2 rounded" />
-            <input type="email" placeholder="Email" value={vendorSignup.email} onChange={e => setVendorSignup({ ...vendorSignup, email: e.target.value })} className="border p-2 rounded" />
-            <input type="text" placeholder="Phone Number" value={vendorSignup.phone} onChange={e => setVendorSignup({ ...vendorSignup, phone: e.target.value })} className="border p-2 rounded" />
-            <input type="password" placeholder="Password" value={vendorSignup.password} onChange={e => setVendorSignup({ ...vendorSignup, password: e.target.value })} className="border p-2 rounded" />
-            <button type="submit" className="bg-primary text-white py-2 rounded">Sign Up</button>
+          <form onSubmit={handleSignup} className="flex flex-col gap-5">
+            <div>
+              <label className="block mb-1 text-gray-700 font-medium">Business Name</label>
+              <input type="text" placeholder="Business Name" value={signup.name} onChange={e => setSignup({ ...signup, name: e.target.value })} className="border p-2 rounded w-full focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block mb-1 text-gray-700 font-medium">Email</label>
+              <input type="email" placeholder="Email" value={signup.email} onChange={e => setSignup({ ...signup, email: e.target.value })} className="border p-2 rounded w-full focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+            <div className="relative">
+              <label className="block mb-1 text-gray-700 font-medium">Password</label>
+              <input type={showSignupPassword ? 'text' : 'password'} placeholder="Password" value={signup.password} onChange={e => setSignup({ ...signup, password: e.target.value })} className="border p-2 rounded w-full focus:ring-2 focus:ring-primary focus:border-transparent pr-10" />
+              <button type="button" className="absolute right-3 top-9 text-gray-400 hover:text-primary" tabIndex={-1} onClick={() => setShowSignupPassword(v => !v)}>
+                {showSignupPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+              </button>
+            </div>
+            <button type="submit" className="bg-primary hover:bg-primary-dull text-white py-2 rounded font-semibold transition" disabled={loading}>{loading ? 'Signing up...' : 'Sign Up'}</button>
           </form>
         )}
         {tab === 'vendor-login' && (
-          <form onSubmit={handleVendorLogin} className="flex flex-col gap-3">
-            <input type="email" placeholder="Email" value={vendorLogin.email} onChange={e => setVendorLogin({ ...vendorLogin, email: e.target.value })} className="border p-2 rounded" />
-            <input type="password" placeholder="Password" value={vendorLogin.password} onChange={e => setVendorLogin({ ...vendorLogin, password: e.target.value })} className="border p-2 rounded" />
-            <button type="submit" className="bg-primary text-white py-2 rounded">Login</button>
-          </form>
-        )}
-        {tab === 'admin' && (
-          <form onSubmit={handleAdminLogin} className="flex flex-col gap-3">
-            <input type="email" placeholder="Admin Email" value={adminLogin.email} onChange={e => setAdminLogin({ ...adminLogin, email: e.target.value })} className="border p-2 rounded" />
-            <input type="password" placeholder="Password" value={adminLogin.password} onChange={e => setAdminLogin({ ...adminLogin, password: e.target.value })} className="border p-2 rounded" />
-            <button type="submit" className="bg-primary text-white py-2 rounded">Login</button>
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <div>
+              <label className="block mb-1 text-gray-700 font-medium">Email</label>
+              <input type="email" placeholder="Email" value={loginData.email} onChange={e => setLoginData({ ...loginData, email: e.target.value })} className="border p-2 rounded w-full focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+            <div className="relative">
+              <label className="block mb-1 text-gray-700 font-medium">Password</label>
+              <input type={showLoginPassword ? 'text' : 'password'} placeholder="Password" value={loginData.password} onChange={e => setLoginData({ ...loginData, password: e.target.value })} className="border p-2 rounded w-full focus:ring-2 focus:ring-primary focus:border-transparent pr-10" />
+              <button type="button" className="absolute right-3 top-9 text-gray-400 hover:text-primary" tabIndex={-1} onClick={() => setShowLoginPassword(v => !v)}>
+                {showLoginPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+              </button>
+            </div>
+            <button type="submit" className="bg-primary hover:bg-primary-dull text-white py-2 rounded font-semibold transition" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
           </form>
         )}
       </div>

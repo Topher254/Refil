@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-
-const mockOrders = [
-  { id: 1, vendor: 'Pro Gas Station', location: 'Westlands', status: 'Ongoing' },
-  { id: 2, vendor: 'SeaGas', location: 'Kilimani', status: 'Completed' },
-  { id: 3, vendor: 'Total', location: 'CBD', status: 'Ongoing' },
-];
+import { UseAppContext } from '../../context/context';
 
 const AdminOrders = () => {
+  const { orders } = UseAppContext();
   const [filter, setFilter] = useState('All');
-  const filtered = filter === 'All' ? mockOrders : mockOrders.filter(o => o.status === filter);
+  const filtered = filter === 'All' ? orders : orders.filter(o => o.status === filter);
   return (
     <div style={{ padding: 24 }}>
       <h2>Order Monitoring</h2>

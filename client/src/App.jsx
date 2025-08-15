@@ -19,7 +19,6 @@ import AdminUsers from './pages/admin/Users';
 import AdminOrders from './pages/admin/Orders';
 import AdminPayments from './pages/admin/Payments';
 import AdminReviews from './pages/admin/Reviews';
-import AdminAnalytics from './pages/admin/Analytics';
 import Login from './pages/Login';
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
@@ -57,7 +56,7 @@ const App = () => {
           <Route path='/admin/orders' element={<AdminOrders />} />
           <Route path='/admin/payments' element={<AdminPayments />} />
           <Route path='/admin/reviews' element={<AdminReviews />} />
-          <Route path='/admin/analytics' element={<AdminAnalytics />} />
+          <Route path='/admin/analytics' element={<AdminDashboard />} />
         </Routes>
       </div>
       {!isDashboard && <Footer/>}

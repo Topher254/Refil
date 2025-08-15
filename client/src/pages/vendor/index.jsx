@@ -3,6 +3,7 @@ import { UseAppContext } from '../../context/context';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import { MdDashboard, MdPerson, MdInventory, MdShoppingCart, MdPayments, MdStarRate, MdWorkspacePremium, MdGrade, MdEdit, MdDelete, MdAdd } from 'react-icons/md';
 import toast from 'react-hot-toast';
+import { HiMenuAlt3 } from 'react-icons/hi';
 
 const vendorTabs = [
   { label: 'Dashboard', key: 'dashboard', icon: <MdDashboard size={22} /> },
@@ -62,48 +63,75 @@ const ProfileTab = () => {
 };
 // --- Products CRUD Tab ---
 const ProductsTab = () => {
-  const { vendors } = UseAppContext();
-  // For demo, use first vendor in gas
-  const [products, setProducts] = useState(vendors?.gas?.[0]?.products || []);
+  const { products, user, fetchProducts } = UseAppContext();
+  const vendorProducts = products.filter(p => p.vendor && p.vendor._id === user?._id);
   const [modalOpen, setModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ name: '', size: '', finalPrice: '', brand: '', category: 'Cooking Gas' });
+  const [loading, setLoading] = useState(false);
 
-  // Open modal for add/edit
+  const API_BASE = 'http://localhost:5000/api';
+
   const openModal = (idx = null) => {
     setEditIdx(idx);
     if (idx !== null) {
-      setForm(products[idx]);
+      setForm(vendorProducts[idx]);
     } else {
       setForm({ name: '', size: '', finalPrice: '', brand: '', category: 'Cooking Gas' });
     }
     setModalOpen(true);
   };
-  // Save product
-  const saveProduct = (e) => {
+
+  // Add or Edit product
+  const saveProduct = async (e) => {
     e.preventDefault();
     if (!form.name || !form.size || !form.finalPrice || !form.brand) {
       toast.error('All fields required');
       return;
     }
-    let updated;
-    if (editIdx !== null) {
-      updated = products.map((p, i) => (i === editIdx ? { ...form, _id: p._id } : p));
-      toast.success('Product updated');
-    } else {
-      updated = [...products, { ...form, _id: Date.now().toString() }];
-      toast.success('Product added');
+    setLoading(true);
+    try {
+      if (editIdx !== null) {
+        // Edit
+        await fetch(`${API_BASE}/products/${vendorProducts[editIdx]._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, vendor: user._id }),
+        });
+        toast.success('Product updated');
+      } else {
+        // Add
+        await fetch(`${API_BASE}/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, vendor: user._id }),
+        });
+        toast.success('Product added');
+      }
+      setModalOpen(false);
+      fetchProducts();
+    } catch (err) {
+      toast.error('Failed to save product');
+    } finally {
+      setLoading(false);
     }
-    setProducts(updated);
-    setModalOpen(false);
   };
+
   // Delete product
-  const deleteProduct = (idx) => {
-    if (window.confirm('Delete this product?')) {
-      setProducts(products.filter((_, i) => i !== idx));
+  const deleteProduct = async (idx) => {
+    if (!window.confirm('Delete this product?')) return;
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/products/${vendorProducts[idx]._id}`, { method: 'DELETE' });
       toast.success('Product deleted');
+      fetchProducts();
+    } catch (err) {
+      toast.error('Failed to delete product');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
@@ -122,7 +150,7 @@ const ProductsTab = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((product, idx) => (
+            {vendorProducts.map((product, idx) => (
               <tr key={product._id} className="border-b">
                 <td className="p-2">{product.name}</td>
                 <td className="p-2">{product.brand}</td>
@@ -134,7 +162,7 @@ const ProductsTab = () => {
                 </td>
               </tr>
             ))}
-            {products.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No products yet.</td></tr>}
+            {vendorProducts.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No products yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -160,8 +188,8 @@ const ProductsTab = () => {
               <input type="number" className="border p-2 rounded w-full" value={form.finalPrice} onChange={e => setForm({ ...form, finalPrice: e.target.value })} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setModalOpen(false)}>Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
+              <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-primary text-white rounded" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
         </div>
@@ -170,38 +198,54 @@ const ProductsTab = () => {
   );
 };
 const OrdersTab = () => {
-  const { user } = UseAppContext();
-  const vendorName = user?.businessName || 'Vendor';
-  const [orders, setOrders] = useState([
-    { id: 1, customer: 'Alice', product: 'ProGas 6kg', status: 'Incoming' },
-    { id: 2, customer: 'Bob', product: 'ProGas 13kg', status: 'Accepted' },
-    { id: 3, customer: 'Carol', product: 'ProGas 50kg', status: 'Out for Delivery' },
-  ]);
-
-  const statusFlow = {
+  const { orders, user, fetchOrders } = UseAppContext();
+  const vendorOrders = orders.filter(o => o.vendor && o.vendor._id === user?._id);
+  const [statusFlow] = useState({
     'Incoming': 'Accepted',
     'Accepted': 'Processing',
     'Processing': 'Out for Delivery',
     'Out for Delivery': 'Delivered',
     'Delivered': null
+  });
+  const [loading, setLoading] = useState(false);
+  const API_BASE = 'http://localhost:5000/api';
+
+  // Update order status
+  const updateStatus = async (idx) => {
+    const order = vendorOrders[idx];
+    const newStatus = statusFlow[order.deliveryStatus] || order.deliveryStatus;
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/orders/${order._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deliveryStatus: newStatus }),
+      });
+      toast.success('Order status updated');
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to update order');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateStatus = (idx) => {
-    setOrders(orders => orders.map((o, i) => i === idx ? { ...o, status: statusFlow[o.status] || o.status } : o));
-    toast.success('Order status updated');
-  };
-  const rejectOrder = (idx) => {
-    if (window.confirm('Reject this order?')) {
-      setOrders(orders => orders.filter((_, i) => i !== idx));
-      toast.success('Order rejected');
-    }
-  };
-  const deleteOrder = (idx) => {
-    if (window.confirm('Delete this order?')) {
-      setOrders(orders => orders.filter((_, i) => i !== idx));
+  // Delete order
+  const deleteOrder = async (idx) => {
+    const order = vendorOrders[idx];
+    if (!window.confirm('Delete this order?')) return;
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/orders/${order._id}`, { method: 'DELETE' });
       toast.success('Order deleted');
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to delete order');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Order Management</h2>
@@ -216,25 +260,22 @@ const OrdersTab = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, idx) => (
-              <tr key={order.id} className="border-b">
-                <td className="p-2">{order.product}</td>
-                <td className="p-2">{order.customer}</td>
-                <td className="p-2">{order.status}</td>
+            {vendorOrders.map((order, idx) => (
+              <tr key={order._id} className="border-b">
+                <td className="p-2">{order.products && order.products[0]?.product?.name}</td>
+                <td className="p-2">{order.customer?.name}</td>
+                <td className="p-2">{order.deliveryStatus}</td>
                 <td className="p-2 flex gap-2">
-                  {order.status !== 'Delivered' && (
-                    <button className="px-2 py-1 bg-blue-100 rounded" onClick={() => updateStatus(idx)}>
-                      {statusFlow[order.status] ? `Mark as ${statusFlow[order.status]}` : 'Update'}
+                  {order.deliveryStatus !== 'Delivered' && (
+                    <button className="px-2 py-1 bg-blue-100 rounded" onClick={() => updateStatus(idx)} disabled={loading}>
+                      {statusFlow[order.deliveryStatus] ? `Mark as ${statusFlow[order.deliveryStatus]}` : 'Update'}
                     </button>
                   )}
-                  {order.status === 'Incoming' && (
-                    <button className="px-2 py-1 bg-red-100 rounded" onClick={() => rejectOrder(idx)}>Reject</button>
-                  )}
-                  <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => deleteOrder(idx)}>Delete</button>
+                  <button className="px-2 py-1 bg-gray-200 rounded" onClick={() => deleteOrder(idx)} disabled={loading}>Delete</button>
                 </td>
               </tr>
             ))}
-            {orders.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-400">No orders yet.</td></tr>}
+            {vendorOrders.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-400">No orders yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -242,46 +283,74 @@ const OrdersTab = () => {
   );
 };
 const PaymentsTab = () => {
-  const [payments, setPayments] = useState([
-    { id: 1, type: 'M-Pesa', amount: 1399, status: 'Received', time: '10:30 AM' },
-    { id: 2, type: 'Cash on Delivery', amount: 2500, status: 'Pending', time: '2:00 PM' },
-  ]);
+  const { payments, user, fetchPayments } = UseAppContext();
+  const vendorPayments = payments.filter(p => p.vendor && p.vendor._id === user?._id);
   const [modalOpen, setModalOpen] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ type: 'M-Pesa', amount: '', status: 'Received', time: '' });
+  const [loading, setLoading] = useState(false);
+  const API_BASE = 'http://localhost:5000/api';
 
   const openModal = (idx = null) => {
     setEditIdx(idx);
     if (idx !== null) {
-      setForm(payments[idx]);
+      setForm(vendorPayments[idx]);
     } else {
       setForm({ type: 'M-Pesa', amount: '', status: 'Received', time: '' });
     }
     setModalOpen(true);
   };
-  const savePayment = (e) => {
+
+  // Add or Edit payment
+  const savePayment = async (e) => {
     e.preventDefault();
-    if (!form.type || !form.amount || !form.status || !form.time) {
+    if (!form.type || !form.amount || !form.status) {
       toast.error('All fields required');
       return;
     }
-    let updated;
-    if (editIdx !== null) {
-      updated = payments.map((p, i) => (i === editIdx ? { ...form, id: p.id } : p));
-      toast.success('Payment updated');
-    } else {
-      updated = [...payments, { ...form, id: Date.now() }];
-      toast.success('Payment added');
+    setLoading(true);
+    try {
+      if (editIdx !== null) {
+        // Edit
+        await fetch(`${API_BASE}/payments/${vendorPayments[editIdx]._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, vendor: user._id }),
+        });
+        toast.success('Payment updated');
+      } else {
+        // Add
+        await fetch(`${API_BASE}/payments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, vendor: user._id }),
+        });
+        toast.success('Payment added');
+      }
+      setModalOpen(false);
+      fetchPayments();
+    } catch (err) {
+      toast.error('Failed to save payment');
+    } finally {
+      setLoading(false);
     }
-    setPayments(updated);
-    setModalOpen(false);
   };
-  const deletePayment = (idx) => {
-    if (window.confirm('Delete this payment?')) {
-      setPayments(payments.filter((_, i) => i !== idx));
+
+  // Delete payment
+  const deletePayment = async (idx) => {
+    if (!window.confirm('Delete this payment?')) return;
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/payments/${vendorPayments[idx]._id}`, { method: 'DELETE' });
       toast.success('Payment deleted');
+      fetchPayments();
+    } catch (err) {
+      toast.error('Failed to delete payment');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
@@ -295,24 +364,22 @@ const PaymentsTab = () => {
               <th className="p-2 text-left">Type</th>
               <th className="p-2 text-left">Amount (KES)</th>
               <th className="p-2 text-left">Status</th>
-              <th className="p-2 text-left">Time</th>
               <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {payments.map((payment, idx) => (
-              <tr key={payment.id} className="border-b">
+            {vendorPayments.map((payment, idx) => (
+              <tr key={payment._id} className="border-b">
                 <td className="p-2">{payment.type}</td>
                 <td className="p-2">{payment.amount}</td>
                 <td className="p-2">{payment.status}</td>
-                <td className="p-2">{payment.time}</td>
                 <td className="p-2 flex gap-2">
                   <button className="text-blue-600" onClick={() => openModal(idx)} title="Edit">Edit</button>
                   <button className="text-red-600" onClick={() => deletePayment(idx)} title="Delete">Delete</button>
                 </td>
               </tr>
             ))}
-            {payments.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No payments yet.</td></tr>}
+            {vendorPayments.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-400">No payments yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -339,13 +406,9 @@ const PaymentsTab = () => {
                 <option value="Pending">Pending</option>
               </select>
             </div>
-            <div className="mb-4">
-              <label className="block mb-1">Time</label>
-              <input className="border p-2 rounded w-full" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} placeholder="e.g. 10:30 AM" />
-            </div>
             <div className="flex gap-2 justify-end">
-              <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setModalOpen(false)}>Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-primary text-white rounded">Save</button>
+              <button type="button" className="px-4 py-2 bg-gray-200 rounded" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-primary text-white rounded" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
             </div>
           </form>
         </div>
@@ -354,14 +417,26 @@ const PaymentsTab = () => {
   );
 };
 const ReviewsTab = () => {
-  const { reviews: initialReviews } = UseAppContext();
-  const [reviews, setReviews] = useState(initialReviews);
-  const deleteReview = (idx) => {
-    if (window.confirm('Delete this review?')) {
-      setReviews(reviews => reviews.filter((_, i) => i !== idx));
+  const { reviews: initialReviews, user, fetchReviews } = UseAppContext();
+  const vendorReviews = initialReviews.filter(r => r.vendor && r.vendor._id === user?._id);
+  const [loading, setLoading] = useState(false);
+  const API_BASE = 'http://localhost:5000/api';
+
+  // Delete review
+  const deleteReview = async (idx) => {
+    if (!window.confirm('Delete this review?')) return;
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/reviews/${vendorReviews[idx]._id}`, { method: 'DELETE' });
       toast.success('Review deleted');
+      fetchReviews();
+    } catch (err) {
+      toast.error('Failed to delete review');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Reviews & Ratings</h2>
@@ -376,17 +451,17 @@ const ReviewsTab = () => {
             </tr>
           </thead>
           <tbody>
-            {reviews.map((review, idx) => (
-              <tr key={review.id} className="border-b">
+            {vendorReviews.map((review, idx) => (
+              <tr key={review._id} className="border-b">
                 <td className="p-2">{review.customer}</td>
                 <td className="p-2">{review.comment}</td>
                 <td className="p-2">{review.rating}/5</td>
                 <td className="p-2">
-                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteReview(idx)}>Delete</button>
+                  <button className="px-2 py-1 bg-red-100 rounded" onClick={() => deleteReview(idx)} disabled={loading}>Delete</button>
                 </td>
               </tr>
             ))}
-            {reviews.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-400">No reviews yet.</td></tr>}
+            {vendorReviews.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-gray-400">No reviews yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -411,6 +486,7 @@ const VendorDashboard = () => {
   const reviews = getVendorReviews(vendorName);
   const avgRating = reviews.length ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) : '-';
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Tab content switcher
   let tabContent;
@@ -489,17 +565,35 @@ const VendorDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Hamburger menu for mobile */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded shadow border border-gray-200"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open sidebar"
+      >
+        <HiMenuAlt3 size={24} />
+      </button>
       <DashboardSidebar
         links={vendorTabs.map(tab => ({
           ...tab,
-          onClick: () => setActiveTab(tab.key),
+          onClick: () => {
+            setActiveTab(tab.key);
+            setSidebarOpen(false);
+          },
           isActive: activeTab === tab.key,
         }))}
         title="Vendor"
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        open={sidebarOpen || window.innerWidth >= 1024}
+        onClose={() => setSidebarOpen(false)}
       />
-      <main className="flex-1 ml-20 lg:ml-64 p-6 transition-all">
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <main className="flex-1 ml-0 lg:ml-64 p-6 transition-all w-full">
         {tabContent}
       </main>
     </div>
