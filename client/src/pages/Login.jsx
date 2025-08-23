@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UseAppContext } from '../context/context';
 import { useNavigate } from 'react-router-dom';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
+import BusinessTypeModal from '../components/BusinessTypeModal';
 
 const Login = () => {
-  const { login, register } = UseAppContext();
+  const { login, register, updateBusinessType } = UseAppContext();
   const navigate = useNavigate();
   const [tab, setTab] = useState('vendor');
   const [signup, setSignup] = useState({
@@ -20,6 +21,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showBusinessTypeModal, setShowBusinessTypeModal] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('🔍 Debug - Modal state changed to:', showBusinessTypeModal);
+    console.log('🔍 Debug - loggedInUser state:', loggedInUser);
+  }, [showBusinessTypeModal, loggedInUser]);
 
   // Vendor signup handler
   const handleSignup = async (e) => {
@@ -47,14 +56,70 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    const loggedInUser = await login(loginData.email, loginData.password);
-    setLoading(false);
-    if (loggedInUser) {
-      if (loggedInUser.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/vendor/dashboard');
+    try {
+      const user = await login(loginData.email, loginData.password);
+      setLoading(false);
+      
+      console.log('🔍 Debug - Full user object from login:', user);
+      console.log('🔍 Debug - User role:', user?.role);
+      console.log('🔍 Debug - User businessType:', user?.businessType);
+      console.log('🔍 Debug - businessType type:', typeof user?.businessType);
+      console.log('🔍 Debug - businessType === undefined:', user?.businessType === undefined);
+      console.log('🔍 Debug - businessType === null:', user?.businessType === null);
+      console.log('🔍 Debug - !businessType:', !user?.businessType);
+      
+      if (user) {
+        if (user.role === 'admin') {
+          console.log('🔍 Debug - Admin user, redirecting to admin dashboard');
+          navigate('/admin/dashboard');
+        } else if (user.role === 'vendor') {
+          // For vendors, check if they need to set business type
+          console.log('🔍 Debug - Vendor login, businessType:', user.businessType);
+          console.log('🔍 Debug - Should show modal:', !user.businessType);
+          
+          // TEMPORARY: Force modal to show for testing
+          console.log('🔍 Debug - FORCING MODAL TO SHOW FOR TESTING');
+          setLoggedInUser(user);
+          setShowBusinessTypeModal(true);
+          console.log('🔍 Debug - Modal state set to true, loggedInUser set');
+          console.log('🔍 Debug - Current showBusinessTypeModal state:', showBusinessTypeModal);
+          
+          // ORIGINAL LOGIC (commented out for testing):
+          // if (!user.businessType) {
+          //   console.log('🔍 Debug - Setting loggedInUser and showing modal');
+          //   setLoggedInUser(user);
+          //   setShowBusinessTypeModal(true);
+          // } else {
+          //   console.log('🔍 Debug - Business type already set, redirecting to dashboard');
+          //   navigate('/vendor/dashboard');
+          // }
+        }
       }
+    } catch (err) {
+      setLoading(false);
+      setError(err.response?.data?.error || 'Login failed');
+    }
+  };
+
+  // Handle business type selection
+  const handleBusinessTypeSelect = async (updatedUser) => {
+    try {
+      // Update the user's business type
+      await updateBusinessType(updatedUser.businessType);
+      // Close modal and redirect to dashboard
+      setShowBusinessTypeModal(false);
+      navigate('/vendor/dashboard');
+    } catch (err) {
+      setError('Failed to set business type. Please try again.');
+    }
+  };
+
+  const handleCloseBusinessTypeModal = () => {
+    setShowBusinessTypeModal(false);
+    // If they close without setting business type, still redirect to dashboard
+    // They can set it later from the dashboard
+    if (loggedInUser) {
+      navigate('/vendor/dashboard');
     }
   };
 
@@ -103,6 +168,14 @@ const Login = () => {
           </form>
         )}
       </div>
+      {showBusinessTypeModal && (
+        <BusinessTypeModal
+          isOpen={showBusinessTypeModal}
+          onClose={handleCloseBusinessTypeModal}
+          onBusinessTypeSelect={handleBusinessTypeSelect}
+          user={loggedInUser}
+        />
+      )}
     </div>
   );
 };

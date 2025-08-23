@@ -1,4 +1,4 @@
-import { BsStar } from "react-icons/bs";
+import { BsStar, BsStarFill } from "react-icons/bs";
 import { HiPlus, HiStar } from "react-icons/hi";
 import { UseAppContext } from "../../context/context";
 import { useState, useEffect } from "react";
@@ -18,32 +18,59 @@ const Productcard = ({ product, vendor }) => {
   const finalPrice = product.finalPrice || product.offerPrice;
   const basePrice = product.basePrice || product.price;
   const offerPrice = product.offerPrice;
-  const deliveryFee = vendor?.deliveryFee || 0;
+  const deliveryFee = vendor?.deliveryFee || product.deliveryFee || 0;
+  const rating = product.rating || 3; // Default to 3 stars if no rating
+  const totalRatings = product.totalRatings || 0;
+
+  // Get vendor info from product if not passed separately
+  const productVendor = vendor || product.vendor;
 
   return product && (
-    <div className="border border-gray-500/20 rounded-md md:px-4 px-3 py-2 bg-white min-w-56 max-w-56 w-full">
+    <div className="border border-gray-500/20 rounded-md md:px-4 px-3 py-2 bg-white min-w-56 max-w-56 w-full hover:shadow-lg transition-shadow">
       <div className="group cursor-pointer flex items-center justify-center px-2">
-        <img className="group-hover:scale-105 transition max-w-26 md:max-w-36" src={product.image} alt={product.name} />
+        <img 
+          className="group-hover:scale-105 transition max-w-26 md:max-w-36 h-32 object-cover rounded" 
+          src={product.image} 
+          alt={product.name}
+          onError={(e) => {
+            e.target.src = 'https://via.placeholder.com/200x200?text=Product+Image';
+          }}
+        />
       </div>
       <div className="text-gray-500/60 text-sm">
-        <p>{product.category}</p>
+        <p className="text-xs text-gray-400 uppercase tracking-wide">{product.category}</p>
         <p className="text-gray-700 font-medium text-lg truncate w-full">{product.name}</p>
-        <div className="flex items-center gap-0.5">
-          {Array(5).fill('').map((_, i) => (
-            product._id > i ? <BsStar key={i}/> : <HiStar key={i}/>
+        
+        {/* Rating Display */}
+        <div className="flex items-center gap-1 my-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            i < rating ? (
+              <BsStarFill key={i} className="text-yellow-400 text-sm" />
+            ) : (
+              <BsStar key={i} className="text-gray-300 text-sm" />
+            )
           ))}
-          <p>(4)</p>
+          <span className="text-xs text-gray-500 ml-1">
+            ({rating}{totalRatings > 0 ? ` • ${totalRatings} reviews` : ''})
+          </span>
         </div>
+
+        {/* Brand and Size */}
+        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+          <span className="bg-gray-100 px-2 py-1 rounded">{product.brand}</span>
+          <span className="bg-gray-100 px-2 py-1 rounded">{product.size}</span>
+        </div>
+
         <div className="flex items-end justify-between mt-3">
           <div>
             <p className="md:text-xl text-base font-medium text-indigo-500">
-              Kshs{finalPrice}
+              KES {finalPrice}
             </p>
-            {basePrice !== offerPrice && (
-              <span className="text-gray-500/60 md:text-sm text-xs line-through">Kshs{basePrice}</span>
+            {basePrice && basePrice !== finalPrice && (
+              <span className="text-gray-500/60 md:text-sm text-xs line-through">KES {basePrice}</span>
             )}
-            {vendor && (
-              <p className="text-xs text-gray-500">+ Kshs{deliveryFee} delivery</p>
+            {deliveryFee > 0 && (
+              <p className="text-xs text-gray-500">+ KES {deliveryFee} delivery</p>
             )}
           </div>
           <div className="text-indigo-500">
@@ -72,18 +99,18 @@ const Productcard = ({ product, vendor }) => {
                         updateCartItems(product._id, CartItems[product._id] - 1);
                       }
                     }}
-                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center"
+                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center hover:bg-gray-200 rounded"
                   >
                     -
                   </button>
                   <span className="w-5 text-center">
-                    {product._id}
+                    {CartItems[product._id]}
                   </span>
                   <button
                     onClick={() =>
                       updateCartItems(product._id, CartItems[product._id] + 1)
                     }
-                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center"
+                    className="cursor-pointer text-md w-6 h-full flex items-center justify-center hover:bg-gray-200 rounded"
                   >
                     +
                   </button>

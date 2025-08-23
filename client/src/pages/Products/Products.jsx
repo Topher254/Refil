@@ -248,29 +248,38 @@ const Products = () => {
                 {/* Vendor Info */}
                 <div className="flex items-center gap-2 mb-3">
                   <img 
-                    src={product.vendor.vendorImage} 
-                    alt={product.vendor.vendorName}
+                    src={product.vendor?.image || 'https://via.placeholder.com/24x24?text=V'} 
+                    alt={product.vendor?.name || 'Vendor'}
                     className="w-6 h-6 rounded-full"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/24x24?text=V';
+                    }}
                   />
-                  <span className="text-sm text-gray-600">{product.vendor.vendorName}</span>
+                  <span className="text-sm text-gray-600">
+                    {product.vendor?.name || 'Vendor'}
+                  </span>
                 </div>
 
                 {/* Rating and Reviews */}
                 <div className="flex items-center gap-1 mb-3">
                   <BsStarFill className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm font-medium">{product.vendor.rating}</span>
-                  <span className="text-sm text-gray-500">({product.vendor.totalReviews})</span>
+                  <span className="text-sm font-medium">
+                    {product.rating || 3}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    ({product.totalRatings || 0})
+                  </span>
                 </div>
 
                 {/* Delivery Info */}
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <HiTruck className="w-3 h-3" />
-                    <span>{product.vendor.deliveryTime}</span>
+                    <span>2-4 hours</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <HiLocationMarker className="w-3 h-3" />
-                    <span>{product.vendor.deliveryRadius}</span>
+                    <span>15km</span>
                   </div>
                 </div>
 
@@ -278,12 +287,14 @@ const Products = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-lg font-bold text-primary">
-                      Kshs {product.finalPrice}
+                      KES {product.finalPrice}
                     </div>
-                    {product.basePrice !== product.offerPrice && (
-                      <span className="text-gray-500/60 md:text-sm text-xs line-through">Kshs{product.basePrice}</span>
+                    {product.basePrice && product.basePrice !== product.finalPrice && (
+                      <span className="text-gray-500/60 md:text-sm text-xs line-through">KES {product.basePrice}</span>
                     )}
-                    <div className="text-xs text-gray-500">+ Kshs {product.vendor.deliveryFee} delivery</div>
+                    <div className="text-xs text-gray-500">
+                      + KES {product.deliveryFee || 0} delivery
+                    </div>
                   </div>
                   <div className="text-indigo-500">
                     <button

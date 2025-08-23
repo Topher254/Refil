@@ -3,28 +3,30 @@ import { Link } from 'react-router-dom';
 import { UseAppContext } from '../../context/context';
 import { HiTrash, HiArrowLeft, HiShoppingBag, HiLocationMarker, HiTruck } from 'react-icons/hi';
 import { BsStarFill } from 'react-icons/bs';
+import { toast } from 'react-hot-toast';
 
 const Cart = () => {
   const { 
     CartItems, 
-    getProductWithVendor,
+    products, // Use the new products array instead of getProductWithVendor
     updateCartItems, 
     removeItem, 
+    clearCart,
     navigate 
   } = UseAppContext();
 
   // Calculate cart totals
   const cartItemCount = Object.values(CartItems).reduce((total, quantity) => total + quantity, 0);
   
-  // Get cart items with product and vendor details
+  // Get cart items with product details from the new products array
   const cartItemsWithDetails = Object.entries(CartItems).map(([productId, quantity]) => {
-    const productWithVendor = getProductWithVendor(productId);
-    if (!productWithVendor) return null;
+    const product = products.find(p => p._id === productId);
+    if (!product) return null;
     
     return {
-      ...productWithVendor,
+      ...product,
       quantity,
-      totalPrice: productWithVendor.finalPrice * quantity
+      totalPrice: product.finalPrice * quantity
     };
   }).filter(item => item !== null); // Filter out any null items
 
@@ -39,20 +41,43 @@ const Cart = () => {
     navigate('/checkout');
   };
 
-  if (cartItemCount === 0) {
+  // Show loading state while calculating
+  if (cartItemCount > 0 && cartItemsWithDetails.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <HiShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-700 mb-2">Your cart is empty</h2>
-          <p className="text-gray-500 mb-6">Add some products to get started!</p>
-          <Link 
-            to="/products" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dull text-white rounded-lg transition"
-          >
-            <HiArrowLeft className="w-4 h-4" />
-            Browse Products
-          </Link>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading cart items...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartItemCount === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <HiShoppingBag className="w-12 h-12 text-gray-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Your cart is empty</h2>
+          <p className="text-gray-600 mb-2">Looks like you haven't added any products yet.</p>
+          <p className="text-gray-500 mb-8">Start shopping to fill your cart with amazing products!</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link 
+              to="/products" 
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dull text-white rounded-lg transition-colors font-medium"
+            >
+              <HiArrowLeft className="w-4 h-4" />
+              Browse Products
+            </Link>
+            <Link 
+              to="/" 
+              className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+            >
+              Go to Home
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -65,14 +90,25 @@ const Cart = () => {
         <div className="flex items-center gap-4 mb-4">
           <button 
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-primary transition"
+            className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors"
           >
             <HiArrowLeft className="w-5 h-5" />
             Back
           </button>
         </div>
-        <h1 className="text-3xl font-bold text-gray-800">Shopping Cart</h1>
-        <p className="text-gray-600 mt-2">{cartItemCount} item{cartItemCount !== 1 ? 's' : ''} in your cart</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Shopping Cart</h1>
+            <p className="text-gray-600 mt-2">
+              {cartItemCount} item{cartItemCount !== 1 ? 's' : ''} in your cart
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+              {cartItemCount} items
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -89,7 +125,7 @@ const Cart = () => {
                     {/* Product Image */}
                     <div className="flex-shrink-0">
                       <img 
-                        src={item.image} 
+                        src={item.image || '/assets/images/placeholder.jpg'} 
                         alt={item.name}
                         className="w-20 h-20 object-contain rounded-lg border border-gray-200"
                       />
@@ -111,29 +147,31 @@ const Cart = () => {
                           
                           {/* Vendor Info */}
                           <div className="flex items-center gap-2 mb-2">
-                            <img 
-                              src={item.vendor.vendorImage} 
-                              alt={item.vendor.vendorName}
-                              className="w-5 h-5 rounded-full"
-                            />
-                            <span className="text-sm text-gray-600">{item.vendor.vendorName}</span>
+                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
+                                {item.vendor?.name?.charAt(0) || 'V'}
+                              </span>
+                            </div>
+                            <span className="text-sm text-gray-600">{item.vendor?.name || 'Vendor'}</span>
                           </div>
                           
                           {/* Rating */}
                           <div className="flex items-center gap-1 mb-3">
                             <BsStarFill className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm text-gray-600">{item.vendor.rating} ({item.vendor.totalReviews} reviews)</span>
+                            <span className="text-sm text-gray-600">
+                              {item.rating || 3} ({item.totalRatings || 0} reviews)
+                            </span>
                           </div>
 
                           {/* Delivery Info */}
                           <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                             <div className="flex items-center gap-1">
                               <HiTruck className="w-4 h-4" />
-                              <span>{item.vendor.deliveryTime}</span>
+                              <span>Same day delivery</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <HiLocationMarker className="w-4 h-4" />
-                              <span>{item.vendor.deliveryRadius}</span>
+                              <span>Nairobi & surrounding areas</span>
                             </div>
                           </div>
 
@@ -156,7 +194,7 @@ const Cart = () => {
                             </div>
                           )}
                           <div className="text-xs text-gray-500 mt-1">
-                            + Kshs {item.vendor.deliveryFee} delivery
+                            + Kshs {item.deliveryFee || 0} delivery
                           </div>
                         </div>
                       </div>
@@ -165,7 +203,7 @@ const Cart = () => {
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-medium text-gray-700">Quantity:</span>
-                          <div className="flex items-center border border-gray-300 rounded-lg">
+                          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                             <button
                               onClick={() => {
                                 if (item.quantity === 1) {
@@ -174,16 +212,17 @@ const Cart = () => {
                                   updateCartItems(item._id, item.quantity - 1);
                                 }
                               }}
-                              className="px-3 py-1 text-gray-600 hover:text-primary transition"
+                              className="px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={item.quantity === 1}
                             >
                               -
                             </button>
-                            <span className="px-4 py-1 border-x border-gray-300 font-medium">
+                            <span className="px-4 py-2 border-x border-gray-300 font-medium bg-gray-50 min-w-[3rem] text-center">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => updateCartItems(item._id, item.quantity + 1)}
-                              className="px-3 py-1 text-gray-600 hover:text-primary transition"
+                              className="px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 transition-colors"
                             >
                               +
                             </button>
@@ -194,15 +233,31 @@ const Cart = () => {
                           <div className="text-right">
                             <div className="text-sm text-gray-600">Total:</div>
                             <div className="text-lg font-semibold text-primary">
-                              Kshs {item.totalPrice}
+                              Kshs {item.totalPrice.toFixed(2)}
                             </div>
                           </div>
-                          <button
-                            onClick={() => removeItem(item._id)}
-                            className="text-red-500 hover:text-red-700 transition"
-                          >
-                            <HiTrash className="w-5 h-5" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                toast.success(`${item.name} saved for later!`);
+                                // TODO: Implement save for later functionality
+                                console.log('Save for later:', item._id);
+                              }}
+                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Save for later"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => removeItem(item._id)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove from cart"
+                            >
+                              <HiTrash className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -237,17 +292,30 @@ const Cart = () => {
               </div>
             </div>
 
-            <button
-              onClick={handleCheckout}
-              className="w-full mt-6 py-3 px-4 bg-primary hover:bg-primary-dull text-white font-medium rounded-lg transition"
-            >
-              Proceed to Checkout
-            </button>
+            <div className="space-y-3 mt-6">
+              <button
+                onClick={handleCheckout}
+                className="w-full py-3 px-4 bg-primary hover:bg-primary-dull text-white font-medium rounded-lg transition-colors"
+              >
+                Proceed to Checkout
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to clear your cart? This action cannot be undone.')) {
+                    clearCart();
+                  }
+                }}
+                className="w-full py-2 px-4 border border-red-300 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors"
+              >
+                Clear Cart
+              </button>
+            </div>
 
             <div className="mt-4 text-center">
               <Link 
                 to="/products" 
-                className="text-primary hover:text-primary-dull text-sm transition"
+                className="text-primary hover:text-primary-dull text-sm transition-colors"
               >
                 Continue Shopping
               </Link>

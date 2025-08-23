@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Truck, Droplets, DollarSign, Users } from 'lucide-react';
+import { Truck, Droplets, DollarSign, Users, Gift, ArrowRight, Star, Clock } from 'lucide-react';
 import delivery_md_3 from '../../assets/delivery_md_3.jpg'
 
 export default function Subscribe() {
@@ -7,10 +7,17 @@ export default function Subscribe() {
 
   const handleSubscribe = () => {
     if (email) {
-      alert('Thank you for subscribing!');
+      alert('Thank you for subscribing! You\'ll receive exclusive offers and updates.');
       setEmail('');
     }
   };
+
+  const benefits = [
+    { icon: <Gift className="w-6 h-6 text-green-600" />, text: "Exclusive Discounts" },
+    { icon: <Clock className="w-6 h-6 text-blue-600" />, text: "Early Access to Deals" },
+    { icon: <Star className="w-6 h-6 text-yellow-500" />, text: "VIP Customer Status" },
+    { icon: <Truck className="w-6 h-6 text-purple-600" />, text: "Priority Delivery" }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 rounded-3xl">
@@ -58,80 +65,66 @@ export default function Subscribe() {
             </div>
 
             <div className="space-y-8">
-              <h1 className="text-4xl lg:text-5xl font-bold text-green-500 mb-8">
-                Why We Are the Best?
-              </h1>
+              <div className="text-center lg:text-left">
+                <h1 className="text-4xl lg:text-5xl font-bold text-green-500 mb-8">
+                  Stay Updated & Save Big! 💰
+                </h1>
+                <p className="text-xl text-gray-700 mb-8">
+                  Subscribe to our newsletter and be the first to know about exclusive offers, 
+                  flash sales, and special discounts on gas and water delivery.
+                </p>
+              </div>
 
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-green-500 rounded-lg p-3 flex-shrink-0">
-                    <Truck className="w-6 h-6 text-white" />
+              {/* Benefits Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-center gap-3 bg-white/50 rounded-lg p-3">
+                    {benefit.icon}
+                    <span className="text-sm font-medium text-gray-700">{benefit.text}</span>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Fastest Delivery</h3>
-                    <p className="text-gray-600">Gas and water delivered in under 30 minutes.</p>
-                  </div>
-                </div>
+                ))}
+              </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="bg-green-500 rounded-lg p-3 flex-shrink-0">
-                    <Droplets className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Quality Guaranteed</h3>
-                    <p className="text-gray-600">Premium gas and pure water from trusted sources.</p>
-                  </div>
+              {/* Subscribe Form */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
+                  🎉 Get 20% OFF Your First Order!
+                </h3>
+                <p className="text-gray-600 text-center mb-4">
+                  Subscribe now and receive an exclusive discount code
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleSubscribe}
+                    className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors duration-300 flex items-center gap-2 justify-center"
+                  >
+                    Subscribe & Save
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  🔒 We respect your privacy. Unsubscribe at any time.
+                </p>
+              </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="bg-green-500 rounded-lg p-3 flex-shrink-0">
-                    <DollarSign className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Affordable Prices</h3>
-                    <p className="text-gray-600">Quality gas and water at competitive prices.</p>
-                  </div>
+              {/* Urgency Element */}
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-red-500" />
+                  <span className="text-red-700 font-semibold">Limited Time Offer!</span>
                 </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="bg-green-500 rounded-lg p-3 flex-shrink-0">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">Trusted by Thousands</h3>
-                    <p className="text-gray-600">Loved by 10,000+ happy customers.</p>
-                  </div>
-                </div>
+                <p className="text-red-600 text-sm">
+                  First 100 subscribers get an additional 10% discount on their next order!
+                </p>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Newsletter Section */}
-      <div className="bg-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">
-            Never Miss a Deal!
-          </h2>
-          <p className="text-lg text-gray-600 mb-8">
-            Subscribe to get the latest offers, new arrivals, and exclusive discounts on gas and water delivery
-          </p>
-
-          <div className="flex justify-center items-center mx-auto">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email id"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <button
-              onClick={handleSubscribe}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 md:px-8 py-3 rounded-r-lg font-semibold transition-colors duration-200"
-            >
-              Subscribe
-            </button>
           </div>
         </div>
       </div>

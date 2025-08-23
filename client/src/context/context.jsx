@@ -20,25 +20,72 @@ export const AppContextProvider = ({ children }) => {
   const [reviews, setReviews] = useState([]);
   const [analytics, setAnalytics] = useState({});
 
-  // Auth: login
+  // Set up axios interceptors for authentication
+  useEffect(() => {
+    // Request interceptor to add token
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor to handle auth errors
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          // Token is invalid, logout user
+          localStorage.removeItem('token');
+          setUser(null);
+          navigate('/login');
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptors on unmount
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, [navigate]);
+
+  // Login function
   const login = async (email, password) => {
     try {
       const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
-      const data = res.data;
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-      toast.success('Login successful');
-      return data.user; // Return the user object
+      const { token, user } = res.data;
+      
+      localStorage.setItem('token', token);
+      setUser(user);
+      
+      console.log('🔍 Debug - Login response data:', res.data);
+      console.log('🔍 Debug - User object from response:', user);
+      
+      return user;
     } catch (err) {
+      console.error('Login error:', err);
       toast.error(err.response?.data?.error || 'Login failed');
-      return null;
+      throw err;
     }
   };
 
   // Auth: register
   const register = async (name, email, password, role = 'customer') => {
     try {
-      await axios.post(`${API_BASE}/auth/register`, { name, email, password, role });
+      const res = await axios.post(`${API_BASE}/auth/register`, { name, email, password, role });
+      const { user: createdUser } = res.data;
+      
+      // Set the user state after successful registration
+      setUser(createdUser);
+      
       toast.success('Registration successful');
       return true;
     } catch (err) {
@@ -54,13 +101,63 @@ export const AppContextProvider = ({ children }) => {
     toast.success('Logged out');
   };
 
+  // Update business type
+  const updateBusinessType = async (businessType) => {
+    try {
+      const res = await axios.put(`${API_BASE}/auth/business-type`, { businessType });
+      const { user: updatedUser } = res.data;
+      setUser(updatedUser);
+      toast.success('Business type updated successfully');
+      return updatedUser;
+    } catch (err) {
+      console.error('Update business type error:', err);
+      toast.error(err.response?.data?.error || 'Failed to update business type');
+      throw err;
+    }
+  };
+
+  // Check auth status on app start
+  const checkAuthStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const res = await axios.get(`${API_BASE}/auth/me`);
+        setUser(res.data.user);
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    }
+  };
+
   // Fetch products from backend
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_BASE}/products`);
-      setProducts(res.data);
+      // Ensure products have proper structure and vendor info
+      const productsWithVendor = res.data.map(product => ({
+        ...product,
+        rating: product.rating || 3, // Default rating
+        totalRatings: product.totalRatings || 0,
+        image: product.image || 'https://via.placeholder.com/200x200?text=Product+Image',
+        vendor: product.vendor || null,
+        // Ensure vendor has proper structure
+        ...(product.vendor && typeof product.vendor === 'object' && {
+          vendor: {
+            _id: product.vendor._id,
+            name: product.vendor.name,
+            email: product.vendor.email,
+            role: product.vendor.role
+          }
+        })
+      }));
+      setProducts(productsWithVendor);
+      return productsWithVendor; // Return the products
     } catch (err) {
+      console.error('Failed to fetch products:', err);
       toast.error('Failed to fetch products');
+      throw err; // Re-throw the error so .finally() works
     }
   };
 
@@ -262,6 +359,7 @@ export const AppContextProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateBusinessType,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

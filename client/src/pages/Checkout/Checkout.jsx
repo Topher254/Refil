@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 const Checkout = () => {
   const { 
     CartItems, 
-    getProductWithVendor,
+    products, // Use the new products array instead of getProductWithVendor
     navigate,
     clearCart
   } = UseAppContext();
@@ -27,21 +27,22 @@ const Checkout = () => {
   // Calculate cart totals
   const cartItemCount = Object.values(CartItems).reduce((total, quantity) => total + quantity, 0);
   
-  // Get cart items with product and vendor details
+  // Get cart items with product details from the new products array
   const cartItemsWithDetails = Object.entries(CartItems).map(([productId, quantity]) => {
-    const productWithVendor = getProductWithVendor(productId);
-    if (!productWithVendor) return null;
+    const product = products.find(p => p._id === productId);
+    if (!product) return null;
     
     return {
-      ...productWithVendor,
+      ...product,
       quantity,
-      totalPrice: productWithVendor.finalPrice * quantity
+      totalPrice: product.finalPrice * quantity
     };
   }).filter(item => item !== null);
 
   const subtotal = cartItemsWithDetails.reduce((total, item) => total + item.totalPrice, 0);
   const platformFee = subtotal * 0.015; // 1.5% platform fee
-  const total = subtotal + platformFee;
+  const deliveryFee = paymentMethod === 'cash' ? 50 : 0;
+  const total = subtotal + platformFee + deliveryFee;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -309,11 +310,14 @@ const Checkout = () => {
             {/* Order Items */}
             <div className="space-y-4 mb-6">
               {cartItemsWithDetails.map((item) => (
-                <div key={item._id} className="flex items-center gap-3">
+                <div key={item._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <img 
-                    src={item.image} 
+                    src={item.image || '/assets/images/placeholder.jpg'} 
                     alt={item.name}
                     className="w-12 h-12 object-contain rounded border border-gray-200"
+                    onError={(e) => {
+                      e.target.src = '/assets/images/placeholder.jpg';
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -326,10 +330,10 @@ const Checkout = () => {
                     </div>
                     <h4 className="font-medium text-gray-800 truncate text-sm">{item.name}</h4>
                     <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                    <p className="text-xs text-gray-500">{item.vendor.vendorName}</p>
+                    <p className="text-xs text-gray-500">{item.vendor?.name || 'Vendor'}</p>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium text-gray-800 text-sm">Kshs {item.totalPrice}</div>
+                    <div className="font-medium text-gray-800 text-sm">Kshs {item.totalPrice.toFixed(2)}</div>
                   </div>
                 </div>
               ))}
@@ -353,12 +357,20 @@ const Checkout = () => {
                   <span>Kshs 50.00</span>
                 </div>
               )}
+
+              {deliveryFee > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery Fee</span>
+                  <span>Kshs {deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
               
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-lg font-semibold text-gray-800">
                   <span>Total</span>
-                  <span>Kshs {(paymentMethod === 'cash' ? total + 50 : total).toFixed(2)}</span>
+                  <span>Kshs {total.toFixed(2)}</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Including all fees and taxes</p>
               </div>
             </div>
 
